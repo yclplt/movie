@@ -1,45 +1,58 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import MD5 from "crypto-js/md5";
-import { Card, Row, Col } from "antd";
+import { Card, Row, Col, Empty, Spin } from "antd";
 import DetailPage from "./detailPage.js";
 
 export default function HomePage() {
   const { Meta } = Card;
+  const [offset, setOffset] = useState(0);
+
   let currentOffset = 0;
   const [characters, setCharacters] = useState([]);
   const [characterDetail, setCharacterDetail] = useState(null);
+  const [isFetch, setIsFetch] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const loadThirtyCharacters = () => {
-    const baseUrl = `https://gateway.marvel.com/v1/public/characters?limit=30&offset=${currentOffset}`;
-    const timestamp = new Date().getTime();
-    const hash = MD5(
-      timestamp +
-        "cab6ab23838b3a11c4ae489c10af029a31b5aba2" +
-        "79b0805cb1720ca5f2282a861c50a62e"
-    ).toString();
-    const auth = `&ts=${timestamp}&apikey=79b0805cb1720ca5f2282a861c50a62e&hash=${hash}`;
-    const url = `${baseUrl}${auth}`;
-    axios.get(url).then((res) => {
-      setCharacters((list) => [...list, ...res.data.data.results]);
-    });
-    currentOffset += 10;
-  };
+  async function loadThirtyCharacters() {
+    if (isFetch) {
+      setIsLoading(true);
+      const baseUrl = `https://gateway.marvel.com/v1/public/characters?limit=30&offset=${currentOffset}`;
+      const timestamp = new Date().getTime();
+      const hash = MD5(
+        timestamp +
+          "cab6ab23838b3a11c4ae489c10af029a31b5aba2" +
+          "79b0805cb1720ca5f2282a861c50a62e"
+      ).toString();
+      const auth = `&ts=${timestamp}&apikey=79b0805cb1720ca5f2282a861c50a62e&hash=${hash}`;
+      const url = `${baseUrl}${auth}`;
+      await axios.get(url).then((res) => {
+        setCharacters((list) => [...list, ...res.data.data.results]);
+      });
+      currentOffset += 30;
+      setIsLoading(false);
+    }
+  }
 
-  const handleScroll = (e) => {
+  function handleScroll(e) {
     const scrollHeight = e.target.documentElement.scrollHeight;
     const currentHeight = Math.ceil(
       e.target.documentElement.scrollTop + window.innerHeight
     );
-    if (currentHeight + 1 >= scrollHeight) {
+    if (currentHeight + 55 >= scrollHeight) {
       loadThirtyCharacters();
     }
-  };
+  }
 
   useEffect(() => {
     loadThirtyCharacters();
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, false);
   }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isFetch]); // re-run useEffect on isFetching changed
 
   return (
     <>
@@ -52,7 +65,10 @@ export default function HomePage() {
                   <Card
                     hoverable
                     key={`${character.name}-${index}`}
-                    onClick={() => setCharacterDetail(character)}
+                    onClick={() => {
+                      setIsFetch(false);
+                      setCharacterDetail(character);
+                    }}
                     style={{ width: 200 }}
                     cover={
                       <img
@@ -65,16 +81,32 @@ export default function HomePage() {
                   </Card>
                 );
               })}
+
+              {isLoading && (
+                <Spin tip="Loading...">
+                  <Row
+                    justify="center"
+                    style={{
+                      height: "50px",
+                      width: "80vw",
+                    }}
+                  ></Row>
+                </Spin>
+              )}
             </Row>
           </Col>
         )}
-        {characterDetail?.name && (
-          <DetailPage
-            data={characterDetail}
-            onBack={() => setCharacterDetail(null)}
-          />
-        )}
       </Row>
+      {characters?.length === 0 && !isLoading && <Empty />}
+      {characterDetail?.name && (
+        <DetailPage
+          data={characterDetail}
+          onBack={() => {
+            setCharacterDetail(null);
+            setIsFetch(true);
+          }}
+        />
+      )}
     </>
   );
 }
