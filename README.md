@@ -1,4 +1,4 @@
-#$# DEMO
+### DEMO
 - [Online Preview Heroku](https://polls-market.herokuapp.com/ "Online Preview Heroku")
 
 
