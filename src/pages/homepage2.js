@@ -13,7 +13,6 @@ export default function HomePage2() {
   const [currentOffset, setCurrentOffset] = useState(0);
 
   function loadThirtyCharacters() {
-    alert(currentOffset);
     const baseUrl = `https://gateway.marvel.com/v1/public/characters?limit=30&offset=${currentOffset}`;
     const timestamp = new Date().getTime();
     const hash = MD5(
@@ -35,7 +34,7 @@ export default function HomePage2() {
         <InfiniteScroll
           dataLength={currentOffset} //This is important field to render the next data
           next={loadThirtyCharacters}
-          hasMore={true}
+          hasMore={true} //  will be add load more.
           loader={<h4>Loading...</h4>}
         >
           <Col span={20}>
